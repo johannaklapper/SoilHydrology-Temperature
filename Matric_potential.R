@@ -1,7 +1,7 @@
 # --- Calculate psi for a given theta
 
 # switch type
-# case 'van_Genuchten'
+# case 'van_Genuchten' -> we will probably use the Campbell_relationships, so this one can be omitted
 
 # theta_res = params(1);    % Residual water content
 # theta_sat = params(2);    % Volumetric water content at saturation
@@ -11,6 +11,8 @@
 
 # Se = (theta - theta_res) / (theta_sat - theta_res);
 # psi = -((Se^(-1/m) - 1)^(1/n)) / alpha;
+
+
 
 # case 'Campbell'
 
