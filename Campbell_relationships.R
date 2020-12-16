@@ -11,7 +11,7 @@ Ksat = params(4);         # Hydraulic conductivity at saturation
 
 # --- Volumetric soil moisture (theta) for specified matric potential (psi)
 
-if (psi <= psi_sat)
+if (psi <= psi_sat)                             # psi from Matric_potential.R
   theta = theta_sat * (psi / psi_sat)^(-1/b);
 else
   theta = theta_sat;
@@ -19,7 +19,7 @@ end
 
 # --- Hydraulic conductivity (K) for specified matric potential (psi)
 
-if (psi <= psi_sat)
+if (psi <= psi_sat)                         # psi from Matric_potential.R
   K = Ksat * (theta / theta_sat)^(2*b+3);
 else
   K = Ksat;
