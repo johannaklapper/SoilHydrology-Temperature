@@ -18,4 +18,4 @@ theta_sat = params(1);    # Volumetric water content at saturation
 psi_sat = params(2);      # Matric potential at saturation
 b = params(3);            # Exponent
 
-psi = psi_sat * (theta / theta_sat)^-b
+psi = psi_sat * (theta / theta_sat)^-b    # used for Campbell_relationships.R
