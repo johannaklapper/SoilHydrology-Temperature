@@ -2,7 +2,7 @@
 
 # time steps
 
-time <- seq(1, 52608) # [0.5h over data time period]
+time <- seq(1, x) # [h over data time period]
 
 # input variables
 
