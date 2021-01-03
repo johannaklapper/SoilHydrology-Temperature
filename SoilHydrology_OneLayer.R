@@ -74,46 +74,8 @@ trans <-             # transpiration; from Leaf Temperature Model
                 # f <- (SOC / (BD * SD)) * 1.72 # soil organic matter fraction; f = %C * 1.72 
                     # SOC(kg/ha) = SOC (%)× BD (g/cm3)× SD (cm) x 1000                
                     # where,  SOC - Concentration of soil organic carbon (%);   BD - Bulk density (g/cm3); SD-   soil sampling depth (cm)
+  
 
-
-  
-    # Creating functions
-  
-  # psi.fun <- function(psi.sat, theta.t, theta.sat, b) {
-  #   psi <- psi.sat * (theta.t / theta.sat)^-b
-  #   return(psi)
-  # }
-  # 
-  # s.fun <- function(theta.sat, theta.t) {
-  #   s <- 0.5 * ((theta.sat + theta.t)/theta.sat)
-  #   return(s)
-  # }
-  # 
-  # B.min.fun <- function(clay) {
-  #   B.min <- 2.91 + 0.159 * clay
-  #   return(B.min)
-  # }
-  # 
-  # f.fun <- function(SOC, BD, SD) {
-  #   f <- (SOC / (BD * SD)) * 1.72
-  #   return(f)
-  # }
-  # 
-  # B.fun <- function(B.om) {
-  #   B <- (1 - f) * B.min + f * B.om
-  #   return(B)
-  # }
-  # 
-  # psi.n1.fun <- function(psi.sat) {
-  #   psi.n1 <- psi.sat * (s^-B)
-  #   return(psi.n1)
-  # }
-  # 
-  # drain.fun <- function(SD) {
-  #   drain <- -(k.t / SD) * (psi - psi.n1) - k.t
-  #   return(drain)
-  # }
-  
   # precipitation
 prec.NA <- rep(NA, length(time))        # precipitation [m h-1]; from climate data
   time.2 <- seq(1, 365*24*2)           # every half hour
@@ -191,14 +153,6 @@ for(t in time) {
   
     # Calculating drainage
   drain.t <- -(k / dz) * (psi[t] - psi.n1[t]) - k
-  
-    # psi <- psi.fun(psi.sat = psi.sat, theta.t = theta.t, theta.sat = theta.sat)
-    # s <- s.fun(theta.sat = theta.sat, theta.t = theta.t)
-    # B.min <- B.min.fun(clay = clay)
-    # f <- f.fun(SOC = SOC, BD = BD, SD = SD)
-    # B.fun <- B.fun(B.om = B.om)
-    # psi.n1 <- psi.n1.fun(psi.sat = psi.sat)
-    # drain.t <- drain.fun(SD = SD)
   
   # theta (water content) is current water content plus infiltration minus drainage
   theta.t <- theta.t + inf.t - drain.t 
