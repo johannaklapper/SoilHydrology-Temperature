@@ -152,7 +152,7 @@ for(t in time) {
   psi.n1 <- psi.sat * (s[t]^-B)  # matric potential for layer N+1 (layer beneath layer N) -> equation taken from CLM4.5
   
     # Calculating drainage
-  drain.t <- -(k / dz) * (psi[t] - psi.n1[t]) - k
+  drain.t <- -(k / SD) * (psi[t] - psi.n1[t]) - k
   
   # theta (water content) is current water content plus infiltration minus drainage
   theta.t <- theta.t + inf.t - drain.t 
