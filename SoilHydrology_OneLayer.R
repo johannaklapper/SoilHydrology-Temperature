@@ -1,12 +1,12 @@
 ## Modelling Soil Moisture with one soil layer ##
 
-
+setwd("D:/Universität/Master/Georg-August-Universität Göttingen/Ecosystem Atmosphere Processes/Model/Data")
 library(dplyr)
 
 
 # time steps
 
-time <- seq(1, 365*24) # [h over data time period (Year 2017)]
+time <- seq(1, 10) # [h over data time period (Year 2017)]; t = 10 is an example
 
 
 # state variables
@@ -45,13 +45,13 @@ input.data <- read.csv("Data_SoilHydrology_1.csv", header = T, sep = ";")       
 input <- input.data[-(1:2), ]                                                                 # remove first two rows (units and blank)
 input$Date.Time <- as.Date(input$Date.Time, format = "%d.%m.%Y")                              # first column as Date
 input.2017 <- filter(input, input$Date.Time > "2016-12-31" & input$Date.Time < "2018-01-01")  # only data from 2017
-input.2017[ , 2:11] <-lapply(input.2017[ , 2:11], as.numeric)                                 # change class to numeric
+input.2017[ , 2:12] <-lapply(input.2017[ , 2:12], as.numeric)                                 # change class to numeric
 
 
 # input variables
 
   # theta (volumetric water content)
-theta.in <- mean(x = c(38.130, 33.84, 47.09))   # initial soil moisture [m3 m-3]; from climate data (mean of first row)
+theta.in <- mean(x = c(38.130, 33.84, 47.09)) / 100   # initial soil moisture [m3 m-3]; from climate data (mean of first row)
 
   # evaporation from soil
 # evap <-              # evaporation, from 'Evaporation.R'
@@ -75,7 +75,6 @@ trans <-             # transpiration; from Leaf Temperature Model
                     # SOC(kg/ha) = SOC (%)× BD (g/cm3)× SD (cm) x 1000                
                     # where,  SOC - Concentration of soil organic carbon (%);   BD - Bulk density (g/cm3); SD-   soil sampling depth (cm)
   
-
   # precipitation
 prec.NA <- rep(NA, length(time))        # precipitation [m h-1]; from climate data
   time.2 <- seq(1, 365*24*2)           # every half hour
@@ -86,6 +85,17 @@ prec.NA <- rep(NA, length(time))        # precipitation [m h-1]; from climate da
   }
 prec <- na.omit(prec.NA) # remove NA, because now every second row (every even time step) is NA
 
+  # relative humidity
+input.2017$RH[input.2017$RH == -9999] <- 0
+
+Rh.NA <- rep(NA, length(time))        # relative humidity; from climate data
+  time.2 <- seq(1, 365*24*2)           # every half hour
+  for (t in time.2) {                   
+    Rh.30 <-  input.2017[ , 12]
+    if (t%%2 != 0) {Rh.t <- (Rh.30[t] + Rh.30[t+1]) / 2} else next
+    Rh.NA[t] <- Rh.t
+  }
+Rh <- na.omit(Rh.NA) # remove NA, because now every second row (every even time step) is NA
 
 # output variables
 
@@ -95,8 +105,15 @@ runoff <- rep(NA, length(time))   # runoff [m h-1]
 k <- rep(NA, length(time))        # hydraulic conductivity [m h-1]
 inf <- rep(NA, length(time))      # infiltration [m h-1]
 evap <- rep(NA, length(time))     # evaporation [m h-1]
+psi <- rep(NA, length(time))      # matric potential [m]
+s <- rep(NA, length(time))        # coefficient for drainage
+psi.n1 <- rep(NA, length(time))   # matric potential of soil beneath soil layer [m]
   
 
+# example values to try out code #
+temp <- rep(288, length(time))
+Rn <- rep(200, length(time))     
+Gs <- rep(5, length(time))    
 
 
 # Iterative calculations over time
@@ -105,8 +122,8 @@ for(t in time) {
   
   # first water content is taken from climate data, then theta from previous time step is taken for calculation
   # theta.in is the mean water content on 01.01.2017 00.00-00.30 over all 'layers'
-  if(t==1) {theta.t <- theta.in} else {theta.t <- theta[t-1]}
-  if(theta.t > sps) {theta.t <- sps} else {theta.t <- theta[t-1]}
+  if(t == 1) {theta.t <- theta.in} else {theta.t <- theta[t-1]}
+  if(theta.t > sps) {theta.t <- sps} else {theta.t == theta.t}
   
   # precipitation is taken from climate data; every two half-hour values are added for a precipitation value for one hour
   prec.t <- prec[t]
@@ -117,42 +134,43 @@ for(t in time) {
   # evaporation still needs to be done
     # Calculating potential evaporation
   delta <- 4098 * (0.6108*10^3 * exp( 17.27 * temp[t] / (temp[t] + 237.3))) / (temp[t] + 237.3)^2  # (Pa ºC-1) --> convert T in K beforehand?
-  es <- 0.6108 * exp(17.27*10^3 * temp[t] / (temp[t] + 237.3)) # (Pa)
-  ea <- es[t] * Rh # (Pa)
-  ra <-   # (s m-1)
-    gamma <- (cp * p) / (lamda * MWrat)
-  Ep <- (delta[t] * (Rn - Gs) + ρ * cp * (es[t] - ea[t]) / ra) / (lambda * (delta[t] + gamma)) # (kg m−2 s−1)
+  es <- 0.6108 * exp(17.27* temp[t] / (temp[t] + 237.3)) # (Pa)
+  ea <- es * Rh[t] # (Pa)
+  ra <- 10  # (s m-1)
+    gamma <- (cp * p) / (lambda * MWrat)
+  Ep <- (delta * (Rn - Gs) + p * cp * (es - ea) / ra) / (lambda * (delta + gamma)) # (kg m−2 s−1)
   
     # Calculating soil water potential
-  psi <- psi_sat * (theta[t] / theta_sat)^-b   # (m)
+  psi.t <- psi.sat * (theta.t / theta.sat)^-b   # (m)
   
     # Calculating actual evaporation
-  evap.t <- Ep[t] * ( (log[psi[t]] - log[psi.a]) / (log[psi.fc] - log[psi.a]) ) / (V / BD)  # (m s-1)
+  evap.t <- Ep[t] * ( (log(psi.t) - log(psi.a)) / (log(psi.fc) - log(psi.a)) ) / (V / BD)  # (m s-1)
   
   # runoff is the excess water; if runoff is negative, no runoff occurs
   runoff.t <- (theta.t - sps) * V 
   if (runoff.t < 0) {runoff.t <- 0} else {runoff.t == runoff.t}
   
   # infiltration (without infiltration capacity -> if there's space, water will infiltrate)
-  inf.t <- prec.t - runoff.t - trans.t - evap.t
+  inf.t <- prec.t - runoff.t - evap.t # - trans.t
+  if (inf.t < 0) {inf.t <- 0} else {inf.t == inf.t}
   
   # hydraulic conductivity
-  k.t <- k.sat * (theta.t - theta.sat)^(2*b+3)
+  k.t <- k.sat * ((theta.t/theta.sat)^(2*b+3))
   
   # drainage: has to be calculated
     # Calculating psi for given theta
-  psi <- psi_sat * (theta[t] / theta_sat)^-b   # (m); matric potential for soil
+  psi.t <- psi.sat * (theta.t / theta.sat)^-b   # (m); matric potential for soil
   
     # Calculating psi for soil beneath soil layer
-  s <- 0.5 ((theta.sat + theta[t])/theta.sat)
+  s.t <- 0.5 * ((theta.sat + theta.t) / theta.sat)
   B.min <- 2.91 + 0.159 * clay
   B.om <- 2.7
   f <- (SOC / (BD * SD)) * 1.72 # soil organic matter fraction; f = %C * 1.72 
   B <- (1 - f) * B.min + f * B.om
-  psi.n1 <- psi.sat * (s[t]^-B)  # matric potential for layer N+1 (layer beneath layer N) -> equation taken from CLM4.5
+  psi.n1.t <- psi.sat * (s.t^-B)  # matric potential for layer N+1 (layer beneath layer N) -> equation taken from CLM4.5
   
     # Calculating drainage
-  drain.t <- -(k / SD) * (psi[t] - psi.n1[t]) - k
+  drain.t <- -(k / SD) * (psi.t - psi.n1.t) - k
   
   # theta (water content) is current water content plus infiltration minus drainage
   theta.t <- theta.t + inf.t - drain.t 
@@ -162,4 +180,8 @@ for(t in time) {
   k[t] <- k.t
   evap[t] <- evap.t
   drain[t] <- drain.t
+  psi[t] <- psi.t
+  s[t] <- s.t
+  psi.n1[t] <- psi.n1.t
+  inf[t] <- inf.t
 }
