@@ -1,11 +1,6 @@
 ## Modelling Soil Moisture with one soil layer ##
 
 library(dplyr)
-library(ggplot2)
-
-# input data
-
-input.test <- read.csv("Climate_Data.csv", header = T, sep = ";")                     # file with all the input variables
 
 
 # create function
@@ -50,6 +45,8 @@ MWrat <- param[1,4]        # ratio molecular weight of water vapor/dry air
 
 # input data
 
+input.test <- read.csv("Climate_Data.csv", header = T, sep = ";")                     # file with all the input variables
+    
 prec <- input.test[ , 9]   # precipitation [mm 30min-1]
 prec <- prec / 1000 *30*60  # precipitation [m s-1]
 
